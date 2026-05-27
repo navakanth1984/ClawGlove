@@ -28,4 +28,4 @@ clawglove-daemon = "clawglove.sidecar.daemon:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["clawglove*"]
+include = ["clawglove*", "cgbench*"]
