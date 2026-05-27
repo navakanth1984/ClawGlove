@@ -52,8 +52,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/navakanth1984/Fabric-Frontier"
-Bug-Tracker = "https://github.com/navakanth1984/Fabric-Frontier/issues"
+Homepage = "https://github.com/navakanth1984/ClawGlove"
+Bug-Tracker = "https://github.com/navakanth1984/ClawGlove/issues"
 
 [project.scripts]
 acdlc-verify = "scripts.verify_replay:main"

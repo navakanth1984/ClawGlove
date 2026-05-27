@@ -1,7 +1,7 @@
 # 🌌 ClawGlove: Governed Execution Substrate for Autonomous Workloads
 
 [![Release](https://img.shields.io/badge/Release-v2.1.0rc1-indigo.svg)](VERSION)
-[![CI](https://github.com/navakanth1984/Fabric-Frontier/actions/workflows/verify.yml/badge.svg)](https://github.com/navakanth1984/Fabric-Frontier/actions)
+[![CI](https://github.com/navakanth1984/ClawGlove/actions/workflows/verify.yml/badge.svg)](https://github.com/navakanth1984/ClawGlove/actions)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](pyproject.toml)
 [![Stability](https://img.shields.io/badge/Stability-Chaos--Verified-brightgreen.svg)]()
