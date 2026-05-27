@@ -1,0 +1,26 @@
+#!/bin/sh
+# ClawGlove pre-commit hook.
+# Rejects any commit that modifies files under tests/eval/
+# Install: cp .git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+PROTECTED_DIR="tests/eval"
+
+# Check if any staged file touches the protected eval directory
+VIOLATIONS=$(git diff --cached --name-only | grep "^${PROTECTED_DIR}/")
+
+if [ -n "$VIOLATIONS" ]; then
+    echo ""
+    echo "COMMIT REJECTED — ClawGlove locked eval harness"
+    echo "================================================"
+    echo "The following files in ${PROTECTED_DIR}/ are locked:"
+    echo "$VIOLATIONS"
+    echo ""
+    echo "tests/eval/ contains the human-written empirical evaluation suite."
+    echo "This directory must not be modified by automated processes."
+    echo "If you need to update the eval harness, obtain explicit senior review,"
+    echo "remove this hook temporarily, make the change, and reinstall the hook."
+    echo ""
+    exit 1
+fi
+
+exit 0

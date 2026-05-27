@@ -1,0 +1,72 @@
+# Tenant policy for an OpenClaw agent deployment.
+# Based on real attack surface from CVE-2026-25253, ClawHavoc, Clawdrain,
+# and the 138-CVE OpenClaw security crisis (Jan–Apr 2026).
+
+tenant_id: tenant_alpha
+
+# Legitimate OpenClaw agent actions — what normal agents do
+allowed_actions:
+  - llm_call
+  - tool_use
+  - file_read_workspace       # Read own workspace files only
+  - memory_read               # Read own MEMORY.md
+  - memory_write              # Write own MEMORY.md
+  - heartbeat_check           # Read HEARTBEAT.md checklist
+  - send_telegram             # Messaging platform output
+  - send_discord
+  - send_slack
+  - search_web                # Web search via approved tool
+  - skill_execute_approved    # Execute pre-approved, verified skill
+  - calendar_read
+  - email_read
+
+# Actions always denied regardless of other rules.
+# Each entry maps to a real OpenClaw attack vector.
+denied_actions:
+  # Credential exfiltration (ClawHavoc / AMOS pattern)
+  - read_credentials_dir        # ~/.openclaw/credentials/ read
+  - read_env_secrets            # ENV var reads containing API_KEY, SECRET, TOKEN
+  - exfiltrate_oauth_token      # HTTP POST with OAuth/API token to external host
+  - read_soul_secrets           # SOUL.md read for embedded secrets
+
+  # Config / workspace file poisoning (CVE-2026-35650)
+  - write_soul_md               # SOUL.md modification
+  - write_agents_md             # AGENTS.md policy override
+  - write_policy_config         # governance config modification
+
+  # Cross-tenant violations
+  - cross_tenant_file_read
+  - cross_tenant_workspace_write
+  - cross_tenant_db_query
+
+  # Supply chain (ClawHavoc / unverified skill execution)
+  - install_unverified_skill
+  - execute_unverified_skill
+  - load_remote_plugin
+
+  # Shell / command injection (CVE-2026-24763, CVE-2026-25157)
+  - exec_shell_command
+  - escalate_privileges
+  - path_traversal_read
+
+  # SSRF / network (CVE-2026-26322, CVE-2026-26319)
+  - ssrf_internal_network
+  - bypass_sidecar_direct_api
+  - webhook_auth_bypass
+
+  # Memory poisoning / token drain (Clawdrain paper)
+  - memory_md_inject_instructions
+  - session_context_poison
+  - heartbeat_frequency_amplification
+  - skill_verbose_output_inject
+  - tool_output_pollution_write
+
+max_token_budget: 50000
+max_delegation_depth: 3
+
+allowed_tool_patterns:
+  - "search_*"
+  - "read_workspace_*"
+  - "send_*"
+  - "calendar_*"
+  - "memory_read_*"
