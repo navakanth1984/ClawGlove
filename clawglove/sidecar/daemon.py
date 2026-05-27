@@ -15,6 +15,9 @@ import logging
 import socket
 import threading
 import time
+import http.server
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 from clawglove.events.kafka_store import KafkaEventStore
@@ -27,6 +30,110 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("clawglove.daemon")
+
+
+class ClawGloveProxyHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Suppress verbose HTTP logging
+        pass
+
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+
+        # Retrieve tenant ID from headers or default to tenant_alpha
+        tenant_id = self.headers.get('X-Tenant-Id', 'tenant_alpha')
+
+        try:
+            req_json = json.loads(post_data.decode('utf-8'))
+        except Exception:
+            req_json = {}
+
+        # Basic token estimation: 0.25 tokens per character
+        messages = req_json.get("messages", [])
+        prompt_text = "".join(msg.get("content", "") for msg in messages)
+        estimated_tokens = max(100, len(prompt_text) // 4)
+
+        # Query Policy Engine
+        allowed, reason = self.server.engine.check("llm_call", tenant_id, {
+            "tokens_used": estimated_tokens,
+            "model": req_json.get("model", "sarvam-2b"),
+        })
+
+        # Append to Kafka and Telemetry via server references
+        event = {
+            "type": "POLICY_CHECK",
+            "tenant_id": tenant_id,
+            "agent_action": "llm_call",
+            "allowed": allowed,
+            "reason": reason,
+            "domain": "governance",
+            "ts": time.time(),
+        }
+        self.server.event_store.append(event)
+        self.server.telemetry.record_event(
+            "policy_check",
+            {"tenant_id": tenant_id, "agent_action": "llm_call",
+             "allowed": str(allowed), "reason": reason,
+             "type": "POLICY_VIOLATION" if not allowed else "POLICY_ALLOW"},
+        )
+
+        if not allowed:
+            self.send_response(403)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            err_resp = {
+                "error": {
+                    "message": f"ClawGlove Policy Denied: {reason}",
+                    "type": "policy_violation",
+                    "param": None,
+                    "code": "forbidden"
+                }
+            }
+            self.wfile.write(json.dumps(err_resp).encode('utf-8'))
+            return
+
+        # Forward request to the real api.sarvam.ai
+        real_url = "https://api.sarvam.ai/v1" + self.path
+        
+        # Build headers
+        req_headers = {}
+        for k, v in self.headers.items():
+            if k.lower() not in ('host', 'content-length', 'x-tenant-id'):
+                req_headers[k] = v
+
+        # Forward the request
+        req = urllib.request.Request(
+            real_url,
+            data=post_data,
+            headers=req_headers,
+            method='POST'
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                self.send_response(resp.status)
+                for k, v in resp.headers.items():
+                    if k.lower() not in ('transfer-encoding', 'content-encoding', 'content-length'):
+                        self.send_header(k, v)
+                resp_data = resp.read()
+                self.send_header('Content-Length', str(len(resp_data)))
+                self.end_headers()
+                self.wfile.write(resp_data)
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            for k, v in e.headers.items():
+                if k.lower() not in ('transfer-encoding', 'content-encoding', 'content-length'):
+                    self.send_header(k, v)
+            resp_data = e.read()
+            self.send_header('Content-Length', str(len(resp_data)))
+            self.end_headers()
+            self.wfile.write(resp_data)
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
 
 
 class ClawGloveDaemon:
@@ -149,6 +256,20 @@ class ClawGloveDaemon:
     def serve(self) -> None:
         """Start the TCP server. Blocks until interrupted."""
         self._running = True
+
+        # Start the out-of-process HTTP/HTTPS egress proxy interceptor
+        proxy_port = 50052
+        try:
+            proxy_server = http.server.HTTPServer(('127.0.0.1', proxy_port), ClawGloveProxyHandler)
+            proxy_server.engine = self._engine
+            proxy_server.event_store = self._event_store
+            proxy_server.telemetry = self._telemetry
+            proxy_thread = threading.Thread(target=proxy_server.serve_forever, daemon=True)
+            proxy_thread.start()
+            logger.info("Egress Proxy intercepting on 127.0.0.1:%d -> https://api.sarvam.ai/v1", proxy_port)
+        except Exception as e:
+            logger.error("Failed to start Egress Proxy interceptor: %s", e)
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server.bind(("127.0.0.1", self._port))

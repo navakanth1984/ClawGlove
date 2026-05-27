@@ -30,22 +30,53 @@ class OTelTelemetry(TelemetryInterface):
     """
 
     def __init__(self, otlp_endpoint: str = "http://localhost:4317", service_name: str = "clawglove"):
-        # Tracer setup
-        tracer_provider = TracerProvider()
-        tracer_provider.add_span_processor(
-            BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint))
-        )
-        trace.set_tracer_provider(tracer_provider)
-        self._tracer = trace.get_tracer(service_name)
+        import socket
+        self._online = False
 
-        # Metrics setup
-        metric_reader = PeriodicExportingMetricReader(
-            OTLPMetricExporter(endpoint=otlp_endpoint),
-            export_interval_millis=5000,
-        )
-        meter_provider = MeterProvider(metric_readers=[metric_reader])
-        metrics.set_meter_provider(meter_provider)
-        meter = metrics.get_meter(service_name)
+        # Attempt to probe connection to avoid connection errors on trace export
+        try:
+            addr = otlp_endpoint.replace("http://", "").replace("https://", "")
+            if "/" in addr:
+                addr = addr.split("/")[0]
+            host, port = addr.split(":")
+            with socket.create_connection((host, int(port)), timeout=0.1):
+                self._online = True
+        except Exception:
+            pass
+
+        if self._online:
+            try:
+                # Tracer setup
+                tracer_provider = TracerProvider()
+                tracer_provider.add_span_processor(
+                    BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint))
+                )
+                trace.set_tracer_provider(tracer_provider)
+                self._tracer = trace.get_tracer(service_name)
+
+                # Metrics setup
+                metric_reader = PeriodicExportingMetricReader(
+                    OTLPMetricExporter(endpoint=otlp_endpoint),
+                    export_interval_millis=5000,
+                )
+                meter_provider = MeterProvider(metric_readers=[metric_reader])
+                metrics.set_meter_provider(meter_provider)
+                meter = metrics.get_meter(service_name)
+                logger.info("OTelTelemetry initialized and online: %s", otlp_endpoint)
+            except Exception as e:
+                logger.warning("OTel initialization failed: %s. Falling back to offline telemetry.", e)
+                self._online = False
+
+        if not self._online:
+            # Standalone providers without exporters to avoid telemetry failure logs
+            tracer_provider = TracerProvider()
+            trace.set_tracer_provider(tracer_provider)
+            self._tracer = trace.get_tracer(service_name)
+
+            meter_provider = MeterProvider()
+            metrics.set_meter_provider(meter_provider)
+            meter = metrics.get_meter(service_name)
+            logger.info("OTelTelemetry initialized in offline/local-only mode.")
 
         # The four governance scalar metrics
         self._events_counter = meter.create_counter(
