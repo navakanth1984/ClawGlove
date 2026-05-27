@@ -1,0 +1,16 @@
+{
+  "policy": {
+    "name": "Token Consumption Limits Policy",
+    "enforceable": true,
+    "rules": {
+      "active_token_ceiling": 250000,
+      "smart_truncation_trigger_ratio": 0.7,
+      "prune_history_on_subagent_branch": true,
+      "allow_unlimited_context_window": false
+    },
+    "metadata": {
+      "compiled_at": "2026-05-26",
+      "compiler_version": "1.5"
+    }
+  }
+}

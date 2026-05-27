@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACDLC v1.6 Distributed Observability Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: rgba(22, 28, 45, 0.45);
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --border-glow: rgba(99, 102, 241, 0.2);
+            --color-primary: #818cf8;
+            --color-secondary: #c084fc;
+            --color-success: #34d399;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            background-image: radial-gradient(circle at 10% 20%, rgba(129, 140, 248, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(192, 132, 252, 0.05) 0%, transparent 40%);
+            min-height: 100vh;
+            padding: 2.5rem;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.5rem;
+        }
+
+        .logo-title h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-title p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .badge-v16 {
+            background: rgba(192, 132, 252, 0.15);
+            border: 1px solid var(--color-secondary);
+            color: var(--color-secondary);
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Navigation Tabs */
+        .tabs-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            background: rgba(129, 140, 248, 0.1);
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card-metric {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: var(--glass-blur);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-metric:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-glow);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
+        }
+
+        .card-metric h3 {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-metric .metric-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .card-metric .metric-subtext {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .layout-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 1024px) {
+            .layout-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-box {
+            background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: var(--glass-blur);
+            margin-bottom: 2rem;
+        }
+
+        .section-box h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Table design */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 0.95rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-success { background: rgba(52, 211, 153, 0.1); color: var(--color-success); }
+        .status-error { background: rgba(248, 113, 113, 0.1); color: var(--color-error); }
+        .status-warn { background: rgba(251, 191, 36, 0.1); color: var(--color-warning); }
+
+        /* Token chart lists */
+        .token-chart-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .token-bar-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .token-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .token-bar-bg {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .token-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 9999px;
+        }
+
+        /* Capability pill */
+        .cap-pill {
+            display: inline-block;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: var(--color-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            margin-right: 0.4rem;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <div class="logo-title">
+                <h1>ACDLC Distributed Observability Console</h1>
+                <p>Telemetry Analytics and Active Governance Metrics Overview</p>
+            </div>
+            <span class="badge-v16" id="platform-version-badge">v1.6 DISTRIBUTED RUNTIME</span>
+        </header>
+
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('metrics')" id="btn-tab-metrics">Metrics Console</button>
+            <button class="tab-btn" onclick="switchTab('registry')" id="btn-tab-registry">Capability Registry</button>
+            <button class="tab-btn" onclick="switchTab('warehouse')" id="btn-tab-warehouse">Execution Warehouse</button>
+            <button class="tab-btn" onclick="switchTab('violations')" id="btn-tab-violations">Policy Violations</button>
+        </div>
+
+        <!-- TAB 1: METRICS CONSOLE -->
+        <div id="tab-metrics" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="card-metric" id="metric-success-rate">
+                    <h3>System Success Rate</h3>
+                    <div class="metric-value">100.0%</div>
+                    <div class="metric-subtext">Aggregated successful task transitions</div>
+                </div>
+                <div class="card-metric" id="metric-token-usage">
+                    <h3>Total Tokens Burned</h3>
+                    <div class="metric-value">188,000</div>
+                    <div class="metric-subtext">Cumulative input & output tokens</div>
+                </div>
+                <div class="card-metric" id="metric-financial-burn">
+                    <h3>Total Cost (USD)</h3>
+                    <div class="metric-value">$0.1300</div>
+                    <div class="metric-subtext">Active API financial expenditure</div>
+                </div>
+                <div class="card-metric" id="metric-retries-count">
+                    <h3>Recovery Retries</h3>
+                    <div class="metric-value">3</div>
+                    <div class="metric-subtext">Automated self-healing iterations</div>
+                </div>
+            </div>
+
+            <div class="layout-main">
+                <div class="section-box" id="sec-agent-performance">
+                    <h2>📊 Agent Workforce Performance</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Agent Role</th>
+                                <th>Active Stage</th>
+                                <th>Status</th>
+                                <th>Retries</th>
+                                <th>Token Cost</th>
+                                <th>Financial Burn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        
+                            <tr>
+                                <td><strong>TASK_001</strong></td>
+                                <td>Builder</td>
+                                <td>Stage 4: Karpathy Development</td>
+                                <td><span class="status-badge status-success">SUCCESS</span></td>
+                                <td>1</td>
+                                <td>14,150</td>
+                                <td>$0.0300</td>
+                            </tr>
+        
+                            <tr>
+                                <td><strong>TASK_002</strong></td>
+                                <td>Researcher</td>
+                                <td>Stage 1: Context Engineering</td>
+                                <td><span class="status-badge status-success">SUCCESS</span></td>
+                                <td>0</td>
+                                <td>9,300</td>
+                                <td>$0.0100</td>
+                            </tr>
+        
+                            <tr>
+                                <td><strong>TASK_003</strong></td>
+                                <td>Reviewer</td>
+                                <td>Stage 5: Verification & Validation</td>
+                                <td><span class="status-badge status-success">SUCCESS</span></td>
+                                <td>0</td>
+                                <td>6,600</td>
+                                <td>$0.0100</td>
+                            </tr>
+        
+                            <tr>
+                                <td><strong>TASK_004</strong></td>
+                                <td>Optimizer</td>
+                                <td>Stage 6: Observability & Evolution</td>
+                                <td><span class="status-badge status-success">SUCCESS</span></td>
+                                <td>2</td>
+                                <td>28,500</td>
+                                <td>$0.0800</td>
+                            </tr>
+        
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-box" id="sec-stage-burn">
+                    <h2>⚡ Token Burn by Stage</h2>
+                    <div class="token-chart-list">
+    
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 0: GPS Foundation</span>
+                                <strong>12,500 / 250,000 (5.0%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 5.0%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 1: Context Engineering</span>
+                                <strong>45,000 / 250,000 (18.0%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 18.0%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 2: Agentic Engineering</span>
+                                <strong>15,400 / 250,000 (6.2%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 6.16%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 3: Controlled Execution</span>
+                                <strong>8,200 / 250,000 (3.3%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 3.2800000000000002%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 4: Karpathy Development</span>
+                                <strong>85,000 / 250,000 (34.0%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 34.0%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 5: Verification & Validation</span>
+                                <strong>12,400 / 250,000 (5.0%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 4.96%"></div>
+                            </div>
+                        </div>
+        
+                        <div class="token-bar-item">
+                            <div class="token-bar-header">
+                                <span>Stage 6: Observability & Evolution</span>
+                                <strong>9,500 / 250,000 (3.8%)</strong>
+                            </div>
+                            <div class="token-bar-bg">
+                                <div class="token-bar-fill" style="width: 3.8%"></div>
+                            </div>
+                        </div>
+        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: CAPABILITY REGISTRY -->
+        <div id="tab-registry" class="tab-content">
+            <div class="section-box" id="sec-capability-registry">
+                <h2>📋 Capability-Aware Service Catalog</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Skill ID</th>
+                            <th>Name</th>
+                            <th>Version</th>
+                            <th>Location Type</th>
+                            <th>Registry Status</th>
+                            <th>Capabilities Competencies (Level)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    
+                        <tr>
+                            <td><strong>agentic-lifecycle-framework</strong></td>
+                            <td>Agentic Context Development Life Cycle Engine</td>
+                            <td>v1.6</td>
+                            <td><span class="cap-pill" style="background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); color: var(--color-secondary);">orchestrator</span></td>
+                            <td><span class="status-badge status-success">active</span></td>
+                            <td><span class="cap-pill">planning (expert)</span><span class="cap-pill">validation (expert)</span><span class="cap-pill">optimizing (advanced)</span></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>context-engineer</strong></td>
+                            <td>Context Development Life Cycle (CDLC) Skill</td>
+                            <td>v1.0</td>
+                            <td><span class="cap-pill" style="background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); color: var(--color-secondary);">modular-skill</span></td>
+                            <td><span class="status-badge status-success">active</span></td>
+                            <td><span class="cap-pill">research (expert)</span><span class="cap-pill">optimizing (advanced)</span></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>agentic-engineering</strong></td>
+                            <td>Agentic Engineering Workforce Routing</td>
+                            <td>v1.0</td>
+                            <td><span class="cap-pill" style="background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); color: var(--color-secondary);">modular-skill</span></td>
+                            <td><span class="status-badge status-success">active</span></td>
+                            <td><span class="cap-pill">planning (expert)</span><span class="cap-pill">research (advanced)</span></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>karpathy-coding-guidelines</strong></td>
+                            <td>Karpathy Clean Coding Guidelines</td>
+                            <td>v1.0</td>
+                            <td><span class="cap-pill" style="background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); color: var(--color-secondary);">guidelines</span></td>
+                            <td><span class="status-badge status-success">active</span></td>
+                            <td><span class="cap-pill">coding (expert)</span><span class="cap-pill">writing (advanced)</span></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>gps-framework</strong></td>
+                            <td>Goals Purpose Scope Framework</td>
+                            <td>v1.0</td>
+                            <td><span class="cap-pill" style="background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); color: var(--color-secondary);">blueprint</span></td>
+                            <td><span class="status-badge status-success">active</span></td>
+                            <td><span class="cap-pill">planning (expert)</span><span class="cap-pill">validation (advanced)</span></td>
+                        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: EXECUTION WAREHOUSE -->
+        <div id="tab-warehouse" class="tab-content">
+            <div class="section-box" id="sec-execution-warehouse">
+                <h2>🗄️ Partitioned Execution Event Warehouse</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Event ID</th>
+                            <th>Correlation ID</th>
+                            <th>Timestamp</th>
+                            <th>Event Type</th>
+                            <th>Event Source</th>
+                            <th>Severity</th>
+                            <th>Payload Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    
+                        <tr>
+                            <td><strong>evt_093dcb6b</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Deep Subagent Execution", "worker_id": "SIM-S...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4fca96c0</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Granular Micro-file Replacement Iterations", ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_94b47811</strong></td>
+                            <td>TASK-RECOVERY-P0</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/scheduler</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_ce1bdc0d</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Heavy Context Code Refactoring", "worker_id":...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_f76ff86a</strong></td>
+                            <td>TASK-RESEARCH-P3</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/scheduler</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_fffcf561</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Exhaustive Documentation Scan", "worker_id": ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4aae109f</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">DELEGATION_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-warn">WARNING</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"depth": 3}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4d6d5b4f</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (300000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_866d28a8</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Sequential tool calls count (11) exceeded limits ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_f09b11b4</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (270000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_f6e34f10</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Recursive subagent delegation triggered. Blocked ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_06306f92</strong></td>
+                            <td>TASK-RESEARCH-P3</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/scheduler</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_34ab2811</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Heavy Context Code Refactoring", "worker_id":...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4f727c0d</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Exhaustive Documentation Scan", "worker_id": ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_89d80958</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Deep Subagent Execution", "worker_id": "SIM-S...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_b3a015d1</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/worker</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Granular Micro-file Replacement Iterations", ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_cc5a558c</strong></td>
+                            <td>TASK-RECOVERY-P0</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">runtime/scheduler</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_11b8eefe</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (270000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_788ed398</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">DELEGATION_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-warn">WARNING</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"depth": 3}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_7dbf3f95</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Sequential tool calls count (11) exceeded limits ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_8970f646</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (300000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_ca0b423e</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Recursive subagent delegation triggered. Blocked ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_5a5b0e62</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Exhaustive Documentation Scan", "worker_id": ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_674b1ad9</strong></td>
+                            <td>TASK-RESEARCH-P3</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_68175d9c</strong></td>
+                            <td>TASK-RECOVERY-P0</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">TASK_REGISTERED</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"dependencies": []}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_7c0b86ee</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Heavy Context Code Refactoring", "worker_id":...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_868934e8</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Granular Micro-file Replacement Iterations", ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_ae7f12a2</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">WORKER_START</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"task_name": "Deep Subagent Execution", "worker_id": "SIM-S...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_631b04b4</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">DELEGATION_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"depth": 3}</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_70af7932</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (270000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_710c83bb</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Cumulative tokens (300000) exceeded maximum ceili...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_971bd6d0</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Sequential tool calls count (11) exceeded limits ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_c6e66317</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">POLICY_VIOLATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"error": "Recursive subagent delegation triggered. Blocked ...</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_5adc5ad5</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="status-badge status-success" style="background: rgba(129, 140, 248, 0.15); border-color: rgba(129, 140, 248, 0.3); color: var(--color-primary);">HUMAN_ESCALATION</span></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">kernel</span></td>
+                            <td><span class="status-badge status-success">INFO</span></td>
+                            <td><code style="font-size: 0.85rem; color: var(--text-muted);">{"reason": "Cumulative tokens (270000) exceeded maximum ceil...</code></td>
+                        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: POLICY VIOLATIONS -->
+        <div id="tab-violations" class="tab-content">
+            <div class="section-box" id="sec-policy-violations">
+                <h2>⚠️ Governance Policy Violations Log</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Violation Event</th>
+                            <th>Task ID</th>
+                            <th>Timestamp</th>
+                            <th>Event Source</th>
+                            <th>Severity</th>
+                            <th>Breached Constraint Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    
+                        <tr>
+                            <td><strong>evt_11b8eefe</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (270000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4aae109f</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-warn">WARNING</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Breach detected</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_4d6d5b4f</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (300000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_631b04b4</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Breach detected</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_70af7932</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (270000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_710c83bb</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (300000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_788ed398</strong></td>
+                            <td>task_loop_test</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-warn">WARNING</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Breach detected</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_7dbf3f95</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Sequential tool calls count (11) exceeded limits of 10!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_866d28a8</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Sequential tool calls count (11) exceeded limits of 10!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_8970f646</strong></td>
+                            <td>SIM-003</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (300000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_971bd6d0</strong></td>
+                            <td>SIM-004</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Sequential tool calls count (11) exceeded limits of 10!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_c6e66317</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:43:55Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Recursive subagent delegation triggered. Blocked under star topology rules.</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_ca0b423e</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T15:49:31Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Recursive subagent delegation triggered. Blocked under star topology rules.</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_f09b11b4</strong></td>
+                            <td>SIM-001</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Cumulative tokens (270000) exceeded maximum ceiling limit of 250000!</code></td>
+                        </tr>
+        
+                        <tr>
+                            <td><strong>evt_f6e34f10</strong></td>
+                            <td>SIM-002</td>
+                            <td><code>2026-05-26T16:01:34Z</code></td>
+                            <td><span class="cap-pill" style="margin: 0; font-size: 0.75rem;">policy_engine</span></td>
+                            <td><span class="status-badge status-error">ERROR</span></td>
+                            <td><code style="color: var(--color-error); font-size: 0.9rem;">Recursive subagent delegation triggered. Blocked under star topology rules.</code></td>
+                        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('btn-tab-' + tabId).classList.add('active');
+        }
+    </script>
+</body>
+</html>

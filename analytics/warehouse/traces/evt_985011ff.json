@@ -1,0 +1,16 @@
+{
+  "event_id": "evt_985011ff",
+  "correlation_id": "builder_a",
+  "timestamp": "2026-05-27T03:07:36Z",
+  "event_type": "ROUTE_SELECTED",
+  "source": "runtime/routing_engine",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "required_capability": "coding",
+    "score": 0.93,
+    "candidates_evaluated": 2
+  },
+  "agent_id": "builder_a"
+}

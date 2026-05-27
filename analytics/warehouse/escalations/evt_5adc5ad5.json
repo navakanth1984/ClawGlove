@@ -1,0 +1,9 @@
+{
+  "event_id": "evt_5adc5ad5",
+  "correlation_id": "SIM-001",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "HUMAN_ESCALATION",
+  "payload": {
+    "reason": "Cumulative tokens (270000) exceeded maximum ceiling limit of 250000!"
+  }
+}

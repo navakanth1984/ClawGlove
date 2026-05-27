@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Registry Schema",
+  "description": "Standard schema for validating active registry skill manifests",
+  "type": "object",
+  "properties": {
+    "registry": {
+      "type": "object",
+      "properties": {
+        "platform": { "type": "string" },
+        "version": { "type": "string" },
+        "last_updated": { "type": "string" },
+        "root_resolution": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["platform", "version", "last_updated", "root_resolution"]
+    },
+    "active_skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "path": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["orchestrator", "modular-skill", "guidelines", "blueprint"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "experimental", "deprecated", "archived"]
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["expert", "advanced", "intermediate", "standard"]
+            }
+          }
+        },
+        "required": ["id", "name", "version", "path", "type", "status", "capabilities"]
+      }
+    }
+  },
+  "required": ["registry", "active_skills"]
+}

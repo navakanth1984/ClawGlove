@@ -1,0 +1,9 @@
+{
+  "event_id": "evt_16e43bcd",
+  "correlation_id": "SIM-CORREL-009",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "SIM_TEST_EVENT",
+  "payload": {
+    "msg": "Event Bus validation active"
+  }
+}

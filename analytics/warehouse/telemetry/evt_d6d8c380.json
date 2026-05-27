@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_d6d8c380",
+  "correlation_id": "TASK-RESEARCH-P3",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "TASK_ENQUEUED",
+  "payload": {
+    "task_name": "Deep Code Ingestion",
+    "priority": 3,
+    "capability": "research"
+  }
+}

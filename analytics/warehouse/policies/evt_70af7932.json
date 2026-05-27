@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_70af7932",
+  "correlation_id": "SIM-001",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "POLICY_VIOLATION",
+  "payload": {
+    "error": "Cumulative tokens (270000) exceeded maximum ceiling limit of 250000!",
+    "tokens_spent": 150000,
+    "tool_calls": 0
+  }
+}

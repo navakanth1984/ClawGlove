@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Lifecycle State Schema",
+  "description": "Standard schema for validating active agent lifecycle state",
+  "type": "object",
+  "properties": {
+    "schema_name": {
+      "type": "string",
+      "enum": ["lifecycle-state"]
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "generated_by": {
+      "type": "string",
+      "enum": ["ACDLC-v1.6"]
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["ACDLC"]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Unique identifier tracking the active developer task"
+    },
+    "active_stage": {
+      "type": "string",
+      "enum": [
+        "Stage 0: GPS Foundation",
+        "Stage 1: Context Engineering",
+        "Stage 2: Agentic Engineering",
+        "Stage 3: Controlled Execution",
+        "Stage 4: Karpathy Development",
+        "Stage 5: Verification & Validation",
+        "Stage 6: Observability & Evolution"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["INIT", "RUNNING", "PAUSED", "COMPLETED", "FAILED"]
+    },
+    "context_bundle": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "path": { "type": "string" },
+        "compressed": { "type": "boolean" }
+      },
+      "required": ["version", "path"]
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "token_limit": { "type": "integer" },
+        "tokens_consumed": { "type": "integer" },
+        "cost_consumed_usd": { "type": "number" },
+        "execution_retries": { "type": "integer" }
+      }
+    },
+    "remediation": {
+      "type": "object",
+      "properties": {
+        "escalated_to_human": { "type": "boolean" },
+        "retry_limit_hit": { "type": "boolean" }
+      }
+    }
+  },
+  "required": [
+    "schema_name",
+    "schema_version",
+    "generated_by",
+    "framework",
+    "version",
+    "task_id",
+    "active_stage",
+    "status"
+  ]
+}

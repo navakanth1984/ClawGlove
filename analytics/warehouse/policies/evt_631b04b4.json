@@ -1,0 +1,9 @@
+{
+  "event_id": "evt_631b04b4",
+  "correlation_id": "task_loop_test",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "DELEGATION_VIOLATION",
+  "payload": {
+    "depth": 3
+  }
+}

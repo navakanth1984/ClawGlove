@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_5a5b0e62",
+  "correlation_id": "SIM-003",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "WORKER_START",
+  "payload": {
+    "task_name": "Exhaustive Documentation Scan",
+    "worker_id": "SIM-SANDBOX",
+    "token_limit": 250000
+  }
+}

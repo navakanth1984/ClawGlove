@@ -1,0 +1,55 @@
+registry:
+  platform: ACDLC
+  version: 1.6
+  last_updated: '2026-05-26'
+  root_resolution:
+  - .agents/
+  - .gemini/config/
+  - skills/
+active_skills:
+- id: agentic-lifecycle-framework
+  name: Agentic Context Development Life Cycle Engine
+  version: 1.6
+  path: skills/agentic-lifecycle-framework
+  type: orchestrator
+  status: active
+  capabilities:
+    planning: expert
+    validation: expert
+    optimizing: advanced
+- id: context-engineer
+  name: Context Development Life Cycle (CDLC) Skill
+  version: 1.0
+  path: config/skills/context-engineer
+  type: modular-skill
+  status: active
+  capabilities:
+    research: expert
+    optimizing: advanced
+- id: agentic-engineering
+  name: Agentic Engineering Workforce Routing
+  version: 1.0
+  path: skills/agentic-engineering
+  type: modular-skill
+  status: active
+  capabilities:
+    planning: expert
+    research: advanced
+- id: karpathy-coding-guidelines
+  name: Karpathy Clean Coding Guidelines
+  version: 1.0
+  path: skills/karpathy-coding-guidelines
+  type: guidelines
+  status: active
+  capabilities:
+    coding: expert
+    writing: advanced
+- id: gps-framework
+  name: Goals Purpose Scope Framework
+  version: 1.0
+  path: skills/gps-framework
+  type: blueprint
+  status: active
+  capabilities:
+    planning: expert
+    validation: advanced

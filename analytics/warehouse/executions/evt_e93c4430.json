@@ -1,0 +1,13 @@
+{
+  "event_id": "evt_e93c4430",
+  "correlation_id": "TASK-RECOVERY-P0",
+  "timestamp": "2026-05-27T03:42:21Z",
+  "event_type": "TASK_REGISTERED",
+  "source": "runtime/scheduler",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "dependencies": []
+  }
+}

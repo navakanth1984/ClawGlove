@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acdlc"
+version = "2.1.0rc1"
+description = "Governed Execution Substrate and Forensic Replay Engine for Autonomous Systems"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "ACDLC Contributors"}
+]
+keywords = [
+    "event-sourcing",
+    "forensics",
+    "autonomous-systems",
+    "governed-runtime",
+    "replay-engine",
+    "auditability",
+    "deterministic-replay",
+    "operational-ai-safety",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+
+# Zero external runtime dependencies
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.0.0",
+    "twine>=4.0.0",
+    "pytest>=7.0.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/navakanth1984/Fabric-Frontier"
+Bug-Tracker = "https://github.com/navakanth1984/Fabric-Frontier/issues"
+
+[project.scripts]
+acdlc-verify = "scripts.verify_replay:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["events*", "analytics*", "security*", "runtime*", "metrics*", "scripts*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "*.png",
+    "*.log",
+    "*.jsonl",
+    "*.gz",
+    "*.acdlc-replay",
+    "*.json",
+]

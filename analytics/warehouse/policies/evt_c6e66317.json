@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_c6e66317",
+  "correlation_id": "SIM-002",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "POLICY_VIOLATION",
+  "payload": {
+    "error": "Recursive subagent delegation triggered. Blocked under star topology rules.",
+    "tokens_spent": 1000,
+    "tool_calls": 0
+  }
+}

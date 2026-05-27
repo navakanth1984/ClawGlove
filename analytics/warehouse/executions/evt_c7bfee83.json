@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_c7bfee83",
+  "correlation_id": "SIM-004",
+  "timestamp": "2026-05-27T03:42:21Z",
+  "event_type": "WORKER_START",
+  "source": "runtime/worker",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "task_name": "Granular Micro-file Replacement Iterations",
+    "worker_id": "SIM-SANDBOX",
+    "token_limit": 250000
+  }
+}

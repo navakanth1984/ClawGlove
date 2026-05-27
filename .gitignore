@@ -1,0 +1,45 @@
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Packaging and Build directories
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Development Tools cache
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local Worktrees
+worktrees/
+
+# Operational/Forensic data logs (Never commit execution records)
+*.log
+*.acdlc-replay
+*.jsonl
+*.gz
+
+# Local testing output folders
+storage/
+snapshots/
+archives/
+golden_sandbox/
+
+# IDE Configuration files
+.vscode/
+.idea/
+
+# OS-generated files
+.DS_Store
+Thumbs.db

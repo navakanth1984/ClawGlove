@@ -1,0 +1,8 @@
+task_id,stage,tokens_consumed,max_token_limit,limit_exceeded
+task_001,Stage 0: GPS Foundation,12500,250000,false
+task_001,Stage 1: Context Engineering,45000,250000,false
+task_001,Stage 2: Agentic Engineering,15400,250000,false
+task_001,Stage 3: Controlled Execution,8200,250000,false
+task_001,Stage 4: Karpathy Development,85000,250000,false
+task_001,Stage 5: Verification & Validation,12400,250000,false
+task_001,Stage 6: Observability & Evolution,9500,250000,false

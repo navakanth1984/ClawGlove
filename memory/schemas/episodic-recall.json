@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Episodic Recall Schema",
+  "description": "Standard schema for validating episodic memory execution traces",
+  "type": "object",
+  "properties": {
+    "episode_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "task_id": { "type": "string" },
+    "steps_executed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_index": { "type": "integer" },
+          "agent_role": { "type": "string" },
+          "action": { "type": "string" },
+          "status": { "type": "string", "enum": ["SUCCESS", "FAILED"] },
+          "tokens_burned": { "type": "integer" },
+          "error_message": { "type": "string" }
+        },
+        "required": ["step_index", "agent_role", "action", "status", "tokens_burned"]
+      }
+    },
+    "outcome": { "type": "string", "enum": ["COMPLETED", "ABORTED", "ESCALATED"] }
+  },
+  "required": ["episode_id", "timestamp", "task_id", "steps_executed", "outcome"]
+}

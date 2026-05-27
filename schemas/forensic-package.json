@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Forensic Replay Package Schema",
+  "description": "Standardized schema for .acdlc-replay packets containing verified time-travel snapshots, sequence deltas, and cryptographic chain provenance.",
+  "type": "OBJECT",
+  "required": [
+    "replay_id",
+    "schema_version",
+    "tenant_id",
+    "domain",
+    "timestamp",
+    "snapshot_anchor",
+    "archive_epoch",
+    "last_sequence",
+    "state_snapshot",
+    "sequence_delta",
+    "archive_chain_verified"
+  ],
+  "properties": {
+    "replay_id": {
+      "type": "STRING",
+      "description": "Unique cryptographic identifier of the replay package."
+    },
+    "schema_version": {
+      "type": "STRING",
+      "enum": ["1.0"],
+      "description": "ACDLC Platform ABI schema version for compatibility validation."
+    },
+    "tenant_id": {
+      "type": "STRING",
+      "description": "Identifier of the tenant workload context."
+    },
+    "domain": {
+      "type": "STRING",
+      "enum": ["operational", "audit", "security"],
+      "description": "The logical segment or security tier of the event stream."
+    },
+    "timestamp": {
+      "type": "INTEGER",
+      "description": "Unix timestamp of the forensic package generation."
+    },
+    "snapshot_anchor": {
+      "type": ["STRING", "NULL"],
+      "description": "Name or hash of the historical snapshot file used as the hydration anchor."
+    },
+    "archive_epoch": {
+      "type": "INTEGER",
+      "description": "The lineage epoch count verifying sequential order of physical logs."
+    },
+    "last_sequence": {
+      "type": "INTEGER",
+      "description": "The sequence index of the final replayed state transaction."
+    },
+    "state_snapshot": {
+      "type": "OBJECT",
+      "description": "Serialized memory block representing the StateManager state at the snapshot anchor."
+    },
+    "sequence_delta": {
+      "type": "ARRAY",
+      "description": "Chronological array of canonical sorted JSON events replayed on top of the snapshot.",
+      "items": {
+        "type": "OBJECT",
+        "required": ["event_type", "sequence", "tenant_id", "domain", "timestamp"]
+      }
+    },
+    "archive_chain_verified": {
+      "type": "BOOLEAN",
+      "description": "Verification status of the physical partition rolling SHA-256 hash chains."
+    },
+    "rolling_hash_chain": {
+      "type": "OBJECT",
+      "description": "Optional mapping of archive filenames to their SHA-256 hashes."
+    },
+    "signature_block": {
+      "type": "OBJECT",
+      "description": "Optional cryptographic signature validating package provenance.",
+      "properties": {
+        "algorithm": { "type": "STRING" },
+        "public_key": { "type": "STRING" },
+        "signature": { "type": "STRING" }
+      },
+      "required": ["algorithm", "signature"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Telemetry Event Schema",
+  "description": "JSON schema for validating standard operational telemetry event logs",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "agent_role": {
+      "type": "string",
+      "enum": ["Planner", "Researcher", "Builder", "Reviewer", "Optimizer"]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "Stage 0: GPS Foundation",
+        "Stage 1: Context Engineering",
+        "Stage 2: Agentic Engineering",
+        "Stage 3: Controlled Execution",
+        "Stage 4: Karpathy Development",
+        "Stage 5: Verification & Validation",
+        "Stage 6: Observability & Evolution"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE", "IN_PROGRESS"]
+    },
+    "model_name": {
+      "type": "string"
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "tokens_in": { "type": "integer" },
+        "tokens_out": { "type": "integer" },
+        "duration_ms": { "type": "integer" },
+        "tool_calls_count": { "type": "integer" },
+        "cost_usd": { "type": "number" }
+      },
+      "required": ["tokens_in", "tokens_out", "duration_ms"]
+    },
+    "error": {
+      "type": ["object", "null"],
+      "properties": {
+        "error_type": { "type": "string" },
+        "message": { "type": "string" },
+        "consecutive_retries": { "type": "integer" }
+      }
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "v1.7: Identity of the agent that produced this telemetry record"
+    },
+    "tenant_id": {
+      "type": "string",
+      "default": "default",
+      "description": "v1.7: Multi-tenant execution context"
+    },
+    "trace_id": {
+      "type": "string",
+      "description": "v1.7: Links this event to a parent end-to-end execution trace"
+    }
+  },
+  "required": ["timestamp", "task_id", "agent_role", "stage", "status", "metrics"]
+}

@@ -1,0 +1,33 @@
+# Include root metadata files
+include LICENSE
+include README.md
+include SKILL.md
+include manifest.yaml
+include VERSION
+include pyproject.toml
+
+# Include source packages
+recursive-include events *.py
+recursive-include analytics *.py *.html
+recursive-include security *.py
+recursive-include runtime *.py
+recursive-include metrics *.py
+recursive-include scripts *.py
+recursive-include schemas *.json
+recursive-include examples *.py *.md
+
+# Exclude packaging/build/system artifacts
+prune */__pycache__
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude .DS_Store
+
+# Exclude worktrees, logs, and development caches
+prune worktrees
+prune .pytest_cache
+prune .ruff_cache
+global-exclude *.log
+global-exclude *.acdlc-replay
+global-exclude *.gz
+global-exclude *.jsonl

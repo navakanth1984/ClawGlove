@@ -1,0 +1,25 @@
+# ACDLC v1.7 Routing Weight Policy
+# Controls the weighted scoring formula used by runtime/routing_engine.py
+# Formula: score = (capability_weight * cap) + (trust_weight * trust) + (load_weight * load_inv)
+# All weights must sum to 1.0
+
+routing_weights:
+  capability_weight: 0.5    # Competency level contribution (expert/advanced/intermediate/standard)
+  trust_weight: 0.3         # Agent trust score contribution (derived from trust_engine)
+  load_weight: 0.2          # Inverse load factor contribution (1.0 - current_load)
+
+# Competency level numeric mapping
+competency_levels:
+  expert: 1.00
+  advanced: 0.75
+  intermediate: 0.50
+  standard: 0.25
+
+# Trust level base scores (before penalty/reward adjustments)
+trust_level_bases:
+  high: 0.90
+  standard: 0.70
+  restricted: 0.40
+
+# Saturation threshold: if agent load exceeds this, deprioritize even if high-scored
+saturation_threshold: 0.85

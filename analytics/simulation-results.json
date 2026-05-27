@@ -1,0 +1,152 @@
+[
+  {
+    "scenario": "SIM-001 Token Overflow Storm",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-002 Recursive Delegation Loop",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-003 Context Explosion",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-004 Tool Failure Cascade",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-005 Registry Corruption",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-006 Policy Compiler Failure",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-007 Memory Recall Drift",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-008 Hallucinated Dependency Graph",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-009 Event Bus & Correlation",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-010 Multi-Queue Preemption",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-011 Weighted Routing Decision",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-012 Learning Loop Optimization",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-013 Strict Tenant Isolation",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-014 Leader Failover",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-015 Event Replay Consistency",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-016 Policy Promotion Gate",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-017 Split Brain Detection",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-018 Autoscaler Burst",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-019 Auth Failure Rejection",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-020 Cross-Tenant Authz",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-021 Secrets Leak Prevention",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-022 Model Access Control",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-023 Audit Trail Integrity",
+    "status": "PASS",
+    "policy_triggered": false,
+    "escalation_triggered": false
+  },
+  {
+    "scenario": "SIM-024 Privilege Escalation",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": true
+  },
+  {
+    "scenario": "SIM-025 Token Revocation",
+    "status": "PASS",
+    "policy_triggered": true,
+    "escalation_triggered": false
+  }
+]

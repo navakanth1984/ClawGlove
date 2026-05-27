@@ -1,0 +1,5 @@
+task_id,agent_role,stage,status,retries,tokens_in,tokens_out,cost_usd,pass_rate_pct
+task_001,Builder,Stage 4: Karpathy Development,SUCCESS,1,12050,2100,0.03,100
+task_002,Researcher,Stage 1: Context Engineering,SUCCESS,0,8500,800,0.01,100
+task_003,Reviewer,Stage 5: Verification & Validation,SUCCESS,0,5400,1200,0.01,100
+task_004,Optimizer,Stage 6: Observability & Evolution,SUCCESS,2,24000,4500,0.08,80

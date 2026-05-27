@@ -1,0 +1,8 @@
+policy:
+  name: Token Consumption Limits Policy
+  enforceable: true
+  rules:
+    active_token_ceiling: 250000
+    smart_truncation_trigger_ratio: 0.70
+    prune_history_on_subagent_branch: true
+    allow_unlimited_context_window: false

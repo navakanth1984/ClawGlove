@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Cluster Node",
+  "type": "object",
+  "properties": {
+    "node_id": { "type": "string" },
+    "heartbeat_interval_sec": { "type": "integer" },
+    "last_seen": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["healthy", "degraded", "offline"] },
+    "supported_pools": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["node_id", "heartbeat_interval_sec", "last_seen", "status"]
+}

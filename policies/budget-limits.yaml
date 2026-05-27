@@ -1,0 +1,8 @@
+policy:
+  name: Reasoning Economics & Cost Control Policy
+  enforceable: true
+  rules:
+    max_project_budget_spent_ratio: 0.10
+    max_tool_calls_sequence_limit: 10
+    enforce_strict_reasoning_ economics: true
+    allow_financial_overrides: false

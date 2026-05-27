@@ -1,0 +1,12 @@
+{
+  "event_id": "evt_f76ff86a",
+  "correlation_id": "TASK-RESEARCH-P3",
+  "timestamp": "2026-05-26T16:01:34Z",
+  "event_type": "TASK_REGISTERED",
+  "source": "runtime/scheduler",
+  "severity": "info",
+  "schema_version": "1.0",
+  "payload": {
+    "dependencies": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "event_id": "evt_788ed398",
+  "correlation_id": "task_loop_test",
+  "timestamp": "2026-05-26T15:49:31Z",
+  "event_type": "DELEGATION_VIOLATION",
+  "source": "policy_engine",
+  "severity": "warning",
+  "schema_version": "1.0",
+  "payload": {
+    "depth": 3
+  }
+}

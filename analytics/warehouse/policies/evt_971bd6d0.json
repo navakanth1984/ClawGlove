@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_971bd6d0",
+  "correlation_id": "SIM-004",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "POLICY_VIOLATION",
+  "payload": {
+    "error": "Sequential tool calls count (11) exceeded limits of 10!",
+    "tokens_spent": 5500,
+    "tool_calls": 11
+  }
+}

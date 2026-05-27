@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Agent Identity Schema",
+  "description": "Standard schema for validating active agent profiles and capabilities in the execution environment",
+  "type": "object",
+  "properties": {
+    "schema_name": {
+      "type": "string",
+      "enum": ["agent-profile"]
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+_[0-9]+$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["planner", "researcher", "builder", "reviewer", "optimizer"]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["expert", "advanced", "intermediate", "standard"]
+      }
+    },
+    "trust_level": {
+      "type": "string",
+      "enum": ["high", "standard", "restricted"]
+    }
+  },
+  "required": [
+    "schema_name",
+    "schema_version",
+    "agent_id",
+    "name",
+    "role",
+    "capabilities",
+    "trust_level"
+  ]
+}

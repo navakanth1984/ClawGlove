@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACDLC Working Context Schema",
+  "description": "Standard schema for validating active working memory contexts",
+  "type": "object",
+  "properties": {
+    "task_id": { "type": "string" },
+    "active_variables": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "current_file_focus": { "type": "string" },
+    "cursor_line": { "type": "integer" },
+    "reasoning_budget_assigned": { "type": "integer" },
+    "execution_depth": { "type": "integer" }
+  },
+  "required": ["task_id", "active_variables", "reasoning_budget_assigned", "execution_depth"]
+}

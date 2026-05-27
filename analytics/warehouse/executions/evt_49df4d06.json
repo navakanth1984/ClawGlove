@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_49df4d06",
+  "correlation_id": "SIM-002",
+  "timestamp": "2026-05-27T03:06:48Z",
+  "event_type": "WORKER_START",
+  "source": "runtime/worker",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "task_name": "Deep Subagent Execution",
+    "worker_id": "SIM-SANDBOX",
+    "token_limit": 250000
+  }
+}

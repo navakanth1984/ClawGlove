@@ -1,0 +1,11 @@
+{
+  "event_id": "evt_0a1f4a07",
+  "correlation_id": "TASK-RECOVERY-P0",
+  "timestamp": "2026-05-26T15:43:55Z",
+  "event_type": "TASK_ENQUEUED",
+  "payload": {
+    "task_name": "State Rollback Recovery",
+    "priority": 0,
+    "capability": "optimizing"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event_id": "evt_c0697731",
+  "correlation_id": "SIM-CORREL-009",
+  "timestamp": "2026-05-27T03:42:21Z",
+  "event_type": "SIM_TEST_EVENT",
+  "source": "runtime/kernel",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "msg": "Event Bus validation active"
+  }
+}

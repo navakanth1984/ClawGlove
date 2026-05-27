@@ -1,0 +1,14 @@
+{
+  "event_id": "evt_cef08f1a",
+  "correlation_id": "TASK-RECOVERY-P0",
+  "timestamp": "2026-05-26T16:01:34Z",
+  "event_type": "TASK_ENQUEUED",
+  "source": "runtime/kernel",
+  "severity": "info",
+  "schema_version": "1.0",
+  "payload": {
+    "task_name": "State Rollback Recovery",
+    "priority": 0,
+    "capability": "optimizing"
+  }
+}

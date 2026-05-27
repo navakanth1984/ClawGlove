@@ -1,0 +1,9 @@
+policy:
+  name: Subagent Workforce Delegation Policy
+  enforceable: true
+  rules:
+    max_delegation_tree_depth: 2
+    topology_constraint: "star"
+    allow_recursive_agent_spawns: false
+    force_isolated_subagent_workspace: true
+    max_parallel_workers_count: 5
