@@ -98,6 +98,15 @@ class Layer1RuntimeGovernance:
 
         sensitivity = caught / len(violations) if violations else 0.0
 
+        # Operator reset: clear quarantine accumulated during violation sweep
+        # so clean runs are measured against policy rules, not quarantine state.
+        # This mirrors the reset sequence in run_empirical_eval.py.
+        try:
+            self.client.reset_quarantine()
+            logger.info("Operator reset issued between violation and clean phases")
+        except Exception as e:
+            logger.warning("Operator reset failed (clean runs may be affected): %s", e)
+
         # Audit clean runs
         passed = 0
         for action, ctx in clean_runs:
