@@ -1,0 +1,32 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ClawGlove client (sidecar communication) + requests (HTTP testing)
+COPY pyproject.toml .
+COPY clawglove/ ./clawglove/
+RUN pip install --no-cache-dir -e . && pip install --no-cache-dir requests
+
+# Agent test harness
+COPY docker/agent_harness.py .
+
+# Mount agent workspace at runtime (docker-compose bind mount)
+RUN mkdir -p /workspace
+
+# All outbound HTTP/HTTPS routes through the sidecar proxy
+# These are defaults — docker-compose overrides for each agent
+ENV AGENT_NAME=agent
+ENV HTTP_PROXY=http://clawglove-sidecar:8080
+ENV HTTPS_PROXY=http://clawglove-sidecar:8080
+ENV CLAWGLOVE_DAEMON=clawglove-sidecar:50051
+
+# No_proxy: only allow direct access to the internal network sidecar
+# Everything else (including api.sarvam.ai) must go via proxy
+ENV NO_PROXY=clawglove-sidecar
+
+CMD ["python", "agent_harness.py"]

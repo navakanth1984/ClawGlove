@@ -56,6 +56,10 @@ class PolicyCompiler:
         if not raw:
             raise ValueError(f"Empty policy file: {path}")
 
+        # Files without tenant_id are operational configs, not tenant policies
+        if "tenant_id" not in raw:
+            return None
+
         return CompiledPolicy(
             tenant_id=raw["tenant_id"],
             allowed_actions=set(raw.get("allowed_actions", [])),
@@ -72,6 +76,9 @@ class PolicyCompiler:
         for policy_file in policies_dir.glob("*.yaml"):
             try:
                 policy = self.compile(policy_file)
+                if policy is None:
+                    logger.debug("Skipped non-tenant config: %s", policy_file.name)
+                    continue
                 compiled[policy.tenant_id] = policy
                 logger.info("Policy compiled: tenant=%s file=%s", policy.tenant_id, policy_file.name)
             except Exception as e:

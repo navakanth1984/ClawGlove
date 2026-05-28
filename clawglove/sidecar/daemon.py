@@ -202,9 +202,9 @@ class ClawGloveDaemon:
         self._running = True
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind(("127.0.0.1", self._port))
+            server.bind(("0.0.0.0", self._port))
             server.listen(32)
-            logger.info("Daemon listening on 127.0.0.1:%d", self._port)
+            logger.info("Daemon listening on 0.0.0.0:%d", self._port)
             while self._running:
                 try:
                     conn, addr = server.accept()

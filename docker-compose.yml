@@ -1,88 +1,194 @@
-version: "3.9"
+# docker-compose.yml — ClawGlove Phase 5: Full Containerized Stack
+#
+# Network topology (CRITICAL — this is the fail-closed architecture):
+#
+#   clawglove-internal  [internal: true]
+#     ├── screenwriter-agent   (NO external route — internal only)
+#     └── director-agent       (NO external route — internal only)
+#         │ HTTP_PROXY → clawglove-sidecar:8080
+#         │ CLAWGLOVE_DAEMON → clawglove-sidecar:50051
+#         │
+#   clawglove-sidecar  [BOTH networks]
+#         │ ← agents reach sidecar via clawglove-internal
+#         │ → sidecar reaches Kafka/etcd/OTel via clawglove-infra
+#         │ → sidecar reaches api.sarvam.ai via default Docker bridge (external)
+#         │
+#   clawglove-infra  [default bridge — infra services only]
+#     ├── redpanda
+#     ├── etcd
+#     ├── otel-collector
+#     └── jaeger
+#
+# Fail-closed guarantee:
+#   `internal: true` on clawglove-internal removes the default gateway from
+#   agent containers. No direct external route exists. If clawglove-sidecar
+#   stops, HTTP_PROXY connection fails → agent has zero internet access.
 
-# ClawGlove local development infrastructure
-# Starts: Kafka (Redpanda), etcd, OpenTelemetry Collector, Jaeger UI
-# Run: docker compose up -d
-# Stop: docker compose down
 
 networks:
-  clawglove_sidecar_net:
+  clawglove-internal:
     driver: bridge
-    # This is the ONLY network agent containers may access.
-    # Agent containers get no default gateway — only this network.
+    internal: true          # ← KEY: no external routing from this network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+  clawglove-infra:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
 
 services:
 
-  # -----------------------------------------------------------------
-  # Redpanda — Kafka-compatible broker (lighter than full Kafka)
-  # -----------------------------------------------------------------
+  # ─────────────────────────────────────────────
+  # INFRASTRUCTURE
+  # ─────────────────────────────────────────────
+
   redpanda:
-    image: redpandadata/redpanda:v23.3.1
-    container_name: clawglove_redpanda
-    networks: [clawglove_sidecar_net]
-    ports:
-      - "9092:9092"    # Kafka API
-      - "9644:9644"    # Admin API
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: clawglove-redpanda
     command:
       - redpanda
       - start
+      - --smp=1
+      - --memory=512M
       - --overprovisioned
-      - --smp 1
-      - --memory 512M
-      - --reserve-memory 0M
-      - --node-id 0
-      - --check=false
-      - --kafka-addr PLAINTEXT://0.0.0.0:9092
-      - --advertise-kafka-addr PLAINTEXT://localhost:9092
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+    networks:
+      - clawglove-infra
     healthcheck:
-      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy.*true'"]
+      test: ["CMD", "rpk", "cluster", "info"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
 
-  # -----------------------------------------------------------------
-  # etcd — distributed consensus and state checkpoints
-  # -----------------------------------------------------------------
   etcd:
-    image: bitnami/etcd:3.5
-    container_name: clawglove_etcd
-    networks: [clawglove_sidecar_net]
+    image: gcr.io/etcd-development/etcd:v3.5.17
+    container_name: clawglove-etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
     ports:
       - "2379:2379"
-    environment:
-      ALLOW_NONE_AUTHENTICATION: "yes"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://0.0.0.0:2379"
+    networks:
+      - clawglove-infra
     healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health"]
+      test: ["CMD", "etcdctl", "--endpoints=http://localhost:2379", "endpoint", "health"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
-  # -----------------------------------------------------------------
-  # OpenTelemetry Collector — receives spans and metrics from sidecar
-  # -----------------------------------------------------------------
-  otel_collector:
-    image: otel/opentelemetry-collector-contrib:0.96.0
-    container_name: clawglove_otel
-    networks: [clawglove_sidecar_net]
-    ports:
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
-      - "8888:8888"    # Prometheus metrics
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: clawglove-otel
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel/config.yaml
-    command: ["--config=/etc/otel/config.yaml"]
-
-  # -----------------------------------------------------------------
-  # Jaeger — trace visualisation UI
-  # Open http://localhost:16686 to view ClawGlove governance traces
-  # -----------------------------------------------------------------
-  jaeger:
-    image: jaegertracing/all-in-one:1.56
-    container_name: clawglove_jaeger
-    networks: [clawglove_sidecar_net]
+      - ./docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC collector
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - jaeger
+    networks:
+      - clawglove-infra
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: clawglove-jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317"          # Internal OTLP gRPC (not host-exposed)
+    networks:
+      - clawglove-infra
+
+  # ─────────────────────────────────────────────
+  # CLAWGLOVE GOVERNANCE SIDECAR
+  # Bridge between agent containers and the internet.
+  # Also connects to infra for Kafka/etcd/OTel.
+  # ─────────────────────────────────────────────
+
+  clawglove-sidecar:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.sidecar
+    container_name: clawglove-sidecar
     environment:
-      COLLECTOR_OTLP_ENABLED: "true"
+      - KAFKA_BROKER=redpanda:9092
+      - ETCD_ENDPOINT=http://etcd:2379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+    ports:
+      - "50051:50051"   # TCP daemon — host can run CGBench against this
+      - "8080:8080"     # HTTP proxy — host curl tests
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    networks:
+      - clawglove-internal   # Agents connect to sidecar via this network
+      - clawglove-infra      # Sidecar connects to Kafka/etcd/OTel via this
+      # NOTE: sidecar also has default Docker bridge access → can reach api.sarvam.ai
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # AGENT CONTAINERS
+  # internal: true network only — zero external egress.
+  # All outbound traffic routes through clawglove-sidecar.
+  # ─────────────────────────────────────────────
+
+  screenwriter-agent:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.agent-test
+    container_name: clawglove-screenwriter-agent
+    environment:
+      - AGENT_NAME=screenwriter
+      - HTTP_PROXY=http://clawglove-sidecar:8080
+      - HTTPS_PROXY=http://clawglove-sidecar:8080
+      - NO_PROXY=clawglove-sidecar
+      - CLAWGLOVE_DAEMON=clawglove-sidecar:50051
+    volumes:
+      - ./workspace-screenwriter:/workspace:rw
+    depends_on:
+      clawglove-sidecar:
+        condition: service_healthy
+    networks:
+      - clawglove-internal   # ONLY internal network — no external route
+    restart: unless-stopped
+
+  director-agent:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.agent-test
+    container_name: clawglove-director-agent
+    environment:
+      - AGENT_NAME=director
+      - HTTP_PROXY=http://clawglove-sidecar:8080
+      - HTTPS_PROXY=http://clawglove-sidecar:8080
+      - NO_PROXY=clawglove-sidecar
+      - CLAWGLOVE_DAEMON=clawglove-sidecar:50051
+    volumes:
+      - ./workspace-director:/workspace:rw
+    depends_on:
+      clawglove-sidecar:
+        condition: service_healthy
+    networks:
+      - clawglove-internal   # ONLY internal network — no external route
+    restart: unless-stopped
+

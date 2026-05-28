@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Runtime deps only — curl for TCP healthcheck probe
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python package (pyproject.toml drives dep resolution)
+COPY pyproject.toml .
+COPY clawglove/ ./clawglove/
+RUN pip install --no-cache-dir -e .
+
+# Policies mounted at runtime; bake in defaults so image is self-contained
+COPY policies/ ./policies/
+
+# Startup orchestrator
+COPY docker/start-sidecar.sh /start-sidecar.sh
+RUN chmod +x /start-sidecar.sh
+
+# 50051 — TCP governance daemon (ClawGloveClient connects here)
+# 8080  — HTTP proxy (agents route HTTPS_PROXY=http://sidecar:8080)
+EXPOSE 50051
+EXPOSE 8080
+
+# Healthcheck: TCP port 50051 must accept connections
+# --start-period allows daemon startup time before failures count
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=3 \
+  CMD nc -z localhost 50051 || exit 1
+
+CMD ["/start-sidecar.sh"]
