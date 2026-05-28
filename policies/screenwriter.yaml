@@ -1,0 +1,64 @@
+# Policy for the OpenClaw screenwriter agent
+# Workspace: workspace-screenwriter/
+# LLM: Sarvam AI (api.sarvam.ai/v1)
+
+tenant_id: screenwriter
+
+allowed_actions:
+  - sarvam_api_call              # POST to api.sarvam.ai/v1/chat/completions
+  - fs_read_workspace            # Read own workspace-screenwriter/ only
+  - fs_write_workspace           # Write own workspace-screenwriter/ only
+  - send_telegram                # Output channel
+  - send_discord
+  - heartbeat_check
+  - memory_read
+  - memory_write
+
+denied_actions:
+  # Cross-workspace (director's territory)
+  - fs_read_director_workspace
+  - fs_write_director_workspace
+  - cross_workspace_read
+  - cross_workspace_write
+
+  # Credential exfiltration
+  - read_sarvam_api_key          # The actual API key in openclaw.json
+  - read_env_secrets
+  - exfiltrate_credentials
+
+  # Config poisoning
+  - write_soul_md
+  - write_agents_md
+  - write_openclaw_json          # Modifying openclaw.json runtime config
+
+  # Shell / path attacks
+  - exec_shell_command
+  - path_traversal_read
+  - escalate_privileges
+
+  # SSRF / bypass
+  - ssrf_internal_network
+  - bypass_sidecar_proxy         # Direct api.sarvam.ai call without proxy
+  - call_non_sarvam_llm          # Only Sarvam AI is approved LLM endpoint
+
+  # Memory poisoning
+  - memory_md_inject_instructions
+  - session_context_poison
+  - heartbeat_frequency_amplification
+
+  # Token drain
+  - skill_verbose_output_inject
+  - tool_output_pollution_write
+
+# Sarvam AI token budget per session
+# sarvam-2.5 pricing is per-token; 100K is a reasonable daily cap
+max_token_budget: 100000
+max_delegation_depth: 2          # screenwriter can delegate to one subagent only
+
+allowed_tool_patterns:
+  - "fs_read_workspace_*"
+  - "fs_write_workspace_*"
+  - "send_*"
+  - "memory_read_*"
+  - "heartbeat_*"
+  - "search_*"

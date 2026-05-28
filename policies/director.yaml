@@ -1,0 +1,62 @@
+# Policy for the OpenClaw director agent
+# Workspace: workspace-director/
+# LLM: Sarvam AI (api.sarvam.ai/v1)
+# Director can READ screenwriter output (read-only cross-workspace) but not write to it
+
+tenant_id: director
+
+allowed_actions:
+  - sarvam_api_call
+  - fs_read_workspace            # Read own workspace-director/
+  - fs_write_workspace           # Write own workspace-director/
+  - fs_read_screenwriter_output  # Director may read screenwriter's output (one-way)
+  - send_telegram
+  - send_discord
+  - heartbeat_check
+  - memory_read
+  - memory_write
+
+denied_actions:
+  # Director cannot write into screenwriter's workspace
+  - fs_write_screenwriter_workspace
+  - cross_workspace_write
+
+  # Credential exfiltration
+  - read_sarvam_api_key
+  - read_env_secrets
+  - exfiltrate_credentials
+
+  # Config poisoning
+  - write_soul_md
+  - write_agents_md
+  - write_openclaw_json
+
+  # Shell / path attacks
+  - exec_shell_command
+  - path_traversal_read
+  - escalate_privileges
+
+  # SSRF / bypass
+  - ssrf_internal_network
+  - bypass_sidecar_proxy
+  - call_non_sarvam_llm
+
+  # Memory poisoning
+  - memory_md_inject_instructions
+  - session_context_poison
+  - heartbeat_frequency_amplification
+
+  # Token drain
+  - skill_verbose_output_inject
+  - tool_output_pollution_write
+
+max_token_budget: 100000
+max_delegation_depth: 2
+
+allowed_tool_patterns:
+  - "fs_read_*"
+  - "fs_write_workspace_*"
+  - "send_*"
+  - "memory_read_*"
+  - "heartbeat_*"
+  - "search_*"

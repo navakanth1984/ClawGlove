@@ -122,3 +122,15 @@ class ClawGloveClient:
             return "pong" in result
         except ConnectionError:
             return False
+
+    def get_threat_state(self) -> dict:
+        """Return the current threat level and violation count for this tenant."""
+        return self._send({"action": "get_threat_state", "tenant_id": self._tenant_id})
+
+    def reset_quarantine(self) -> bool:
+        """
+        Operator reset: clear quarantine for this tenant.
+        Only call this after reviewing the violation audit log.
+        """
+        result = self._send({"action": "reset_tenant", "tenant_id": self._tenant_id})
+        return result.get("ok", False)

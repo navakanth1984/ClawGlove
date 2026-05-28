@@ -53,8 +53,8 @@ class PolicyCompiler:
         with open(path) as f:
             raw = yaml.safe_load(f)
 
-        if "tenant_id" not in raw:
-            return None
+        if not raw:
+            raise ValueError(f"Empty policy file: {path}")
 
         return CompiledPolicy(
             tenant_id=raw["tenant_id"],
@@ -72,9 +72,8 @@ class PolicyCompiler:
         for policy_file in policies_dir.glob("*.yaml"):
             try:
                 policy = self.compile(policy_file)
-                if policy:
-                    compiled[policy.tenant_id] = policy
-                    logger.info("Policy compiled: tenant=%s file=%s", policy.tenant_id, policy_file.name)
+                compiled[policy.tenant_id] = policy
+                logger.info("Policy compiled: tenant=%s file=%s", policy.tenant_id, policy_file.name)
             except Exception as e:
                 logger.error("Policy compile error: file=%s err=%s", policy_file, e)
                 raise
