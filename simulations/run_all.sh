@@ -1,0 +1,18 @@
+#!/bin/bash
+python simulations/run_simulations.py
+python simulations/stress_autoscaler_oscillation.py
+python simulations/stress_leader_failover.py
+python simulations/stress_queue_saturation.py
+python simulations/stress_replay_corruption.py
+python simulations/stress_split_brain.py
+python simulations/stress_tenant_fuzzing.py
+python simulations/stress_token_edge_cases.py
+python simulations/stress_worker_crash.py
+python simulations/chaos/chaos_001_heartbeat_storm.py
+python simulations/chaos/chaos_002_concurrent_replay.py
+python simulations/chaos/chaos_003_clock_skew.py
+python simulations/chaos/chaos_004_disk_freeze.py
+python simulations/chaos/chaos_005_necro_replay.py
+python simulations/chaos/chaos_006_snapshot_hydration.py
+python simulations/chaos/chaos_007_partial_snapshot.py
+python simulations/chaos/chaos_008_openclaw_containment.py
