@@ -147,10 +147,18 @@ class Layer6SkillProvenance:
 
     def __init__(self, client: Any):
         self.client = client
+        
+        # Ensure CPTClient restarts reuse the same workspace root directory for durability testing
+        import tempfile
+        from pathlib import Path
+        if not hasattr(client, "workspace_root"):
+            client.workspace_root = Path(tempfile.mkdtemp(prefix="cgbench_l6_"))
+            
         self.cpt = CPTClient(client)
         self._tenant_id = getattr(client, "tenant_id", "test-tenant-l6")
         self._alt_tenant_id = f"{self._tenant_id}-alt"
         self.results: list[dict] = []
+
 
     # ------------------------------------------------------------------
     # Internal helpers
