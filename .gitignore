@@ -44,10 +44,15 @@ golden_sandbox/
 .DS_Store
 Thumbs.db
 
+analytics/warehouse/
+runtime/checkpoints/
+simulations/stress_data/
+simulations/chaos/chaos_data_*/
+simulations/openclaw_stress_data/
+
 # Provenance signing secret
 .clawglove_secret
 .clawglove_secrets
-
 
 # SQLite Provenance Ledger database files
 provenance_ledger.db
@@ -56,5 +61,3 @@ provenance_ledger.db-wal
 *.db
 *.db-shm
 *.db-wal
-
-
