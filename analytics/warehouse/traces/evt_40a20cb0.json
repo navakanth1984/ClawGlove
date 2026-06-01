@@ -1,0 +1,16 @@
+{
+  "event_id": "evt_40a20cb0",
+  "correlation_id": "builder_b",
+  "timestamp": "2026-05-30T19:34:02Z",
+  "event_type": "ROUTE_SELECTED",
+  "source": "runtime/routing_engine",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "required_capability": "coding",
+    "score": 0.745,
+    "candidates_evaluated": 1
+  },
+  "agent_id": "builder_b"
+}

@@ -49,4 +49,15 @@ runtime/checkpoints/
 simulations/stress_data/
 simulations/chaos/chaos_data_*/
 simulations/openclaw_stress_data/
-.pytest_cache/
+
+# Provenance signing secret
+.clawglove_secret
+.clawglove_secrets
+
+# SQLite Provenance Ledger database files
+provenance_ledger.db
+provenance_ledger.db-shm
+provenance_ledger.db-wal
+*.db
+*.db-shm
+*.db-wal

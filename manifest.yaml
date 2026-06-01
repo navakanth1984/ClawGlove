@@ -1,6 +1,6 @@
 framework:
   name: ACDLC
-  version: 2.1.0rc1
+  version: 2.1.0
   description: Governed Execution Substrate for Autonomous Systems
 
 graph:
@@ -58,6 +58,7 @@ required_files:
   - analytics/token-usage.csv
   - rfcs/RFC-001-manifest.md
   - rfcs/RFC-002-policy-engine.md
+  - rfcs/RFC-003-context-provenance-tracking.md
   - releases/v1.0.md
   - releases/v1.1.md
   - releases/v1.2.md
@@ -150,3 +151,10 @@ required_files:
   - security/audit.py
   - security/policies.py
   - releases/v2.0.md
+  # v2.1 - Context Provenance Tracking & Skill Quarantine
+  - clawglove/provenance/__init__.py
+  - clawglove/provenance/exceptions.py
+  - clawglove/provenance/watchdog.py
+  - clawglove/provenance/client.py
+  - cgbench/layers/provenance.py
+
