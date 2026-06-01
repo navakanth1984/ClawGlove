@@ -404,6 +404,7 @@ class ClawGloveDaemon:
 
     def serve(self) -> None:
         signal.signal(signal.SIGTERM, lambda *_: self._shutdown())   # CG-09
+        signal.signal(signal.SIGINT, lambda *_: self._shutdown())    # CG-09b: Ctrl+C → graceful
         self._running = True
 
         # Start the background HTTP server for CPT Auditing Explorer UI
