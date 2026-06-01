@@ -17,13 +17,19 @@ Protocol (newline-delimited JSON over TCP):
   ping          → {"action":"ping"}
 """
 import argparse
+import concurrent.futures
 import json
 import logging
+import os
+import signal
 import socket
 import threading
 import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+MAX_MSG_BYTES = 1_048_576   # 1 MB per-message cap (CG-07)
+MAX_WORKERS   = 64          # bounded TCP handler pool (CG-08)
 
 from clawglove.events.kafka_store import KafkaEventStore
 from clawglove.metrics.otel_telemetry import OTelTelemetry
@@ -198,12 +204,22 @@ class ClawGloveDaemon:
         kafka_servers: str = "localhost:9092",
         otlp_endpoint: str = "http://localhost:4317",
         port: int = 50051,
+        bind_host: str = "127.0.0.1",
+        operator_secret: str = "",
     ):
         logger.info("ClawGlove daemon starting...")
 
         self._workspace = workspace
         self._http_host = http_host
         self._http_port = http_port
+        self._bind_host = bind_host          # CG-06: default localhost-only
+        self._operator_secret = operator_secret   # CG-05: reset_tenant auth
+
+        if not operator_secret:
+            logger.warning(
+                "OPERATOR_SECRET not set — reset_tenant is DISABLED until a secret is provided. "
+                "Set via --operator-secret or CLAWGLOVE_OPERATOR_SECRET env var."
+            )
 
         from clawglove.provenance.client import CPTClient
         from pathlib import Path
@@ -247,6 +263,10 @@ class ClawGloveDaemon:
                     if not chunk:
                         break
                     buffer += chunk
+                    if len(buffer) > MAX_MSG_BYTES:   # CG-07: OOM guard
+                        logger.warning("Oversized message from %s (%d bytes) — closing", addr, len(buffer))
+                        conn.sendall((json.dumps({"error": "message_too_large"}) + "\n").encode("utf-8"))
+                        break
                     while b"\n" in buffer:
                         line, buffer = buffer.split(b"\n", 1)
                         if not line.strip():
@@ -322,11 +342,19 @@ class ClawGloveDaemon:
         return self._tracker.get_state(tenant_id)
 
     def _handle_reset_tenant(self, req: dict) -> dict:
-        """Operator endpoint — clears quarantine for a tenant."""
+        """Operator endpoint — clears quarantine for a tenant.
+        Requires operator_secret (CG-05) so agents cannot self-clear quarantine.
+        """
+        if not self._operator_secret:
+            return {"error": "reset_tenant disabled: no OPERATOR_SECRET configured on this daemon."}
+        if req.get("operator_secret", "") != self._operator_secret:
+            logger.warning("reset_tenant: invalid operator_secret — rejected")
+            return {"error": "Unauthorized: invalid operator_secret"}
         tenant_id = req.get("tenant_id", "")
         if not tenant_id:
             return {"error": "Missing tenant_id"}
         self._tracker.reset_tenant(tenant_id)
+        logger.info("Operator reset authorised: tenant=%s quarantine cleared", tenant_id)
         return {"ok": True, "reset": tenant_id}
 
     def _log_governance_event(self, tenant_id, action, allowed, reason,
@@ -360,7 +388,22 @@ class ClawGloveDaemon:
             except Exception as e:
                 logger.warning("EventStore append failed: %s", e)
 
+    def _shutdown(self) -> None:
+        """Graceful shutdown: stop loop, flush Kafka (CG-09)."""
+        logger.info("Daemon shutting down gracefully...")
+        self._running = False
+        if hasattr(self, "_httpd"):
+            try: self._httpd.shutdown()
+            except Exception: pass
+        if self._event_store and getattr(self._event_store, "_producer", None):
+            try:
+                flushed = self._event_store._producer.flush(timeout=5.0)
+                logger.info("Kafka flush at shutdown: %d undelivered", flushed)
+            except Exception as e:
+                logger.error("Kafka flush error: %s", e)
+
     def serve(self) -> None:
+        signal.signal(signal.SIGTERM, lambda *_: self._shutdown())   # CG-09
         self._running = True
 
         # Start the background HTTP server for CPT Auditing Explorer UI
@@ -376,28 +419,31 @@ class ClawGloveDaemon:
         http_thread = threading.Thread(target=_run_http, daemon=True)
         http_thread.start()
 
+        # CG-08: bounded thread pool replaces unbounded per-connection threads
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=MAX_WORKERS, thread_name_prefix="cg-handler"
+        )
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind(("0.0.0.0", self._port))
+            server.settimeout(1.0)              # allows _running check
+            server.bind((self._bind_host, self._port))   # CG-06: default 127.0.0.1
             server.listen(32)
-            logger.info("Daemon listening on 0.0.0.0:%d", self._port)
+            logger.info("Daemon listening on %s:%d (max_workers=%d)", self._bind_host, self._port, MAX_WORKERS)
             while self._running:
                 try:
                     conn, addr = server.accept()
-                    t = threading.Thread(
-                        target=self._handle_client, args=(conn, addr), daemon=True
-                    )
-                    t.start()
+                    executor.submit(self._handle_client, conn, addr)
+                except socket.timeout:
+                    continue
                 except KeyboardInterrupt:
-                    logger.info("Daemon shutting down")
-                    self._running = False
-                    if hasattr(self, "_httpd"):
-                        self._httpd.shutdown()
+                    self._shutdown()
                     break
                 except Exception as e:
                     if not self._running:
                         break
                     logger.error("Error in accept loop: %s", e)
+        executor.shutdown(wait=False)
+        logger.info("Daemon stopped.")
 
 
 def main():
@@ -409,6 +455,10 @@ def main():
     parser.add_argument("--workspace", default=".", help="Workspace root directory")
     parser.add_argument("--http-host", default="127.0.0.1", help="HTTP server bind host")
     parser.add_argument("--http-port", type=int, default=50052, help="HTTP server bind port")
+    parser.add_argument("--bind-host", default=os.environ.get("CLAWGLOVE_BIND_HOST", "127.0.0.1"),
+                        help="TCP daemon bind host (default 127.0.0.1; use 0.0.0.0 only in Docker with no host port exposure)")
+    parser.add_argument("--operator-secret", default=os.environ.get("CLAWGLOVE_OPERATOR_SECRET", ""),
+                        help="Secret required for reset_tenant (CG-05). Set via CLAWGLOVE_OPERATOR_SECRET env var.")
     args = parser.parse_args()
 
     import sys
@@ -447,6 +497,8 @@ def main():
         kafka_servers=args.kafka,
         otlp_endpoint=args.otlp,
         port=args.port,
+        bind_host=args.bind_host,
+        operator_secret=args.operator_secret,
     )
     daemon.serve()
 
