@@ -27,6 +27,7 @@ class TrustEpochMetrics:
     runtime_sensitivity: float      # Percentage of deterministic violations caught (target >= 98%)
     replay_mutation_recovery: float # Percentage of valid events recovered under file corruption (target >= 98%)
     surface_exposure_score: float   # X-Ray surface exposure (target <= 0.15)
+    provenance_score: float = 1.0    # CPT Layer 6 score (target >= 90%)
 
     def compute_grade(self) -> GovernanceGrade:
         """
@@ -35,7 +36,7 @@ class TrustEpochMetrics:
         - G-2 (Resilient): G-1 + survivability_index >= 98% + OTel/Kafka/etcd resilience checks passed
         - G-3 (Epoch Sealed): G-2 + contamination_isolation == 100% + replay_mutation_recovery >= 98%
         - G-4 (Drift Certified): G-3 + governance_escape_entropy <= 1.0 (creative variance H_gov is allowed!)
-        - G-5 (Sovereign Shield): G-4 + surface_exposure_score <= 0.15 + persistence_dwell_ms <= 100.0
+        - G-5 (Sovereign Shield): G-4 + surface_exposure_score <= 0.15 + persistence_dwell_ms <= 100.0 + provenance_score >= 90%
         """
         if self.runtime_sensitivity < 0.98 or self.survivability_index < 0.98:
             return GovernanceGrade.G1_BASIC
@@ -49,7 +50,7 @@ class TrustEpochMetrics:
             return GovernanceGrade.G3_EPOCH_SEALED
 
         # Check Drift Bounded
-        if self.surface_exposure_score > 0.15 or self.persistence_dwell_ms > 100.0:
+        if self.surface_exposure_score > 0.15 or self.persistence_dwell_ms > 100.0 or self.provenance_score < 0.9:
             return GovernanceGrade.G4_DRIFT_CERTIFIED
 
         return GovernanceGrade.G5_SOVEREIGN_SHIELD

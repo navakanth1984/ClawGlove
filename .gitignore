@@ -43,3 +43,18 @@ golden_sandbox/
 # OS-generated files
 .DS_Store
 Thumbs.db
+
+# Provenance signing secret
+.clawglove_secret
+.clawglove_secrets
+
+
+# SQLite Provenance Ledger database files
+provenance_ledger.db
+provenance_ledger.db-shm
+provenance_ledger.db-wal
+*.db
+*.db-shm
+*.db-wal
+
+

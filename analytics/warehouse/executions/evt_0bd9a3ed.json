@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_0bd9a3ed",
+  "correlation_id": "SIM-001",
+  "timestamp": "2026-05-30T19:34:02Z",
+  "event_type": "WORKER_START",
+  "source": "runtime/worker",
+  "severity": "info",
+  "schema_version": "1.0",
+  "tenant_id": "default",
+  "payload": {
+    "task_name": "Heavy Context Code Refactoring",
+    "worker_id": "SIM-SANDBOX",
+    "token_limit": 250000
+  }
+}

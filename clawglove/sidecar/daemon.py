@@ -22,12 +22,15 @@ import logging
 import socket
 import threading
 import time
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from clawglove.events.kafka_store import KafkaEventStore
 from clawglove.metrics.otel_telemetry import OTelTelemetry
 from clawglove.policies.compiler import PolicyCompiler
 from clawglove.policies.engine import PolicyEngine
 from clawglove.sidecar.escalation import ThreatEscalationTracker, ThreatLevel
+from clawglove.sidecar._explorer_html import EXPLORER_HTML
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,16 +39,175 @@ logging.basicConfig(
 logger = logging.getLogger("clawglove.daemon")
 
 
+class AuditHttpHandler(BaseHTTPRequestHandler):
+    daemon: 'ClawGloveDaemon' = None
+
+    def log_message(self, fmt, *args):
+        pass
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path.rstrip("/")
+        
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+
+        if path == "/audit/tenants":
+            try:
+                tenants = self.daemon._cpt_client._ledger.get_quarantined_tenants()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(tenants).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif path.startswith("/audit/quarantine/"):
+            tenant_id = path.split("/")[-1]
+            try:
+                log = self.daemon._cpt_client.get_quarantine_log(tenant_id)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(log).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif path.startswith("/audit/envelope/"):
+            parts = path.split("/")
+            if len(parts) >= 5:
+                tenant_id = parts[-2]
+                skill_id = parts[-1]
+                try:
+                    env = self.daemon._cpt_client.get_envelope(skill_id, tenant_id)
+                    env_dict = {
+                        "skill_id": env.skill_id,
+                        "file_path": env.file_path,
+                        "content_hash": env.content_hash,
+                        "originating_session_id": env.originating_session_id,
+                        "parent_user_request_hash": env.parent_user_request_hash,
+                        "generator_model": env.generator_model,
+                        "generation_timestamp": env.generation_timestamp,
+                        "tenant_id": env.tenant_id,
+                        "signature": env.signature,
+                        "auto_approved": env.auto_approved,
+                        "quarantine_path": env.quarantine_path,
+                    }
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(env_dict).encode("utf-8"))
+                except KeyError:
+                    self.send_response(404)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": f"No envelope for skill {skill_id} in tenant {tenant_id}"}).encode("utf-8"))
+                except Exception as e:
+                    self.send_response(500)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Invalid path format"}).encode("utf-8"))
+            return
+
+        elif path == "/audit/chain/verify":
+            try:
+                env_metrics = self.daemon._cpt_client._ledger.verify_chain("envelopes")
+                env_status = {"status": "VERIFIED", **env_metrics}
+            except Exception as e:
+                env_status = {"status": "VIOLATION", "error_detail": str(e)}
+
+            try:
+                q_metrics = self.daemon._cpt_client._ledger.verify_chain("quarantine_log")
+                q_status = {"status": "VERIFIED", **q_metrics}
+            except Exception as e:
+                q_status = {"status": "VIOLATION", "error_detail": str(e)}
+
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "envelopes": env_status,
+                "quarantine_log": q_status,
+                "node_id": self.daemon._cpt_client._ledger.node_id,
+                "active_key_id": self.daemon._cpt_client._active_key_id,
+            }).encode("utf-8"))
+            return
+
+        elif path == "" or path == "/index.html":
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(EXPLORER_HTML.encode("utf-8"))
+            return
+
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"Not Found")
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path.rstrip("/")
+        
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+
+        if path.startswith("/audit/reconcile/"):
+            tenant_id = path.split("/")[-1]
+            try:
+                res = self.daemon._cpt_client.reconcile_quarantine(tenant_id)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+        
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"Not Found")
+
+
 class ClawGloveDaemon:
 
     def __init__(
         self,
         policies_dir: str,
+        workspace: str = ".",
+        http_host: str = "127.0.0.1",
+        http_port: int = 50052,
         kafka_servers: str = "localhost:9092",
         otlp_endpoint: str = "http://localhost:4317",
         port: int = 50051,
     ):
         logger.info("ClawGlove daemon starting...")
+
+        self._workspace = workspace
+        self._http_host = http_host
+        self._http_port = http_port
+
+        from clawglove.provenance.client import CPTClient
+        from pathlib import Path
+        self._cpt_client = CPTClient.from_workspace(Path(workspace))
 
         compiler = PolicyCompiler()
         policies = compiler.compile_directory(policies_dir)
@@ -200,6 +362,20 @@ class ClawGloveDaemon:
 
     def serve(self) -> None:
         self._running = True
+
+        # Start the background HTTP server for CPT Auditing Explorer UI
+        def _run_http():
+            handler_class = type("AuditHttpHandlerInjected", (AuditHttpHandler,), {"daemon": self})
+            self._httpd = HTTPServer((self._http_host, self._http_port), handler_class)
+            logger.info("Audit Explorer UI listening on http://%s:%d", self._http_host, self._http_port)
+            try:
+                self._httpd.serve_forever()
+            except Exception as e:
+                logger.error("HTTP server error: %s", e)
+
+        http_thread = threading.Thread(target=_run_http, daemon=True)
+        http_thread.start()
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server.bind(("0.0.0.0", self._port))
@@ -215,6 +391,13 @@ class ClawGloveDaemon:
                 except KeyboardInterrupt:
                     logger.info("Daemon shutting down")
                     self._running = False
+                    if hasattr(self, "_httpd"):
+                        self._httpd.shutdown()
+                    break
+                except Exception as e:
+                    if not self._running:
+                        break
+                    logger.error("Error in accept loop: %s", e)
 
 
 def main():
@@ -223,10 +406,44 @@ def main():
     parser.add_argument("--kafka",    default="localhost:9092")
     parser.add_argument("--otlp",     default="http://localhost:4317")
     parser.add_argument("--port",     type=int, default=50051)
+    parser.add_argument("--workspace", default=".", help="Workspace root directory")
+    parser.add_argument("--http-host", default="127.0.0.1", help="HTTP server bind host")
+    parser.add_argument("--http-port", type=int, default=50052, help="HTTP server bind port")
     args = parser.parse_args()
+
+    import sys
+    from pathlib import Path
+    from clawglove.provenance.ledger import ProvenanceLedger, LedgerChainViolation
+
+    workspace = Path(args.workspace)
+    db_path = workspace / "provenance_ledger.db"
+
+    # Close the T-001 chain detection loop on sidecar startup
+    try:
+        ledger = ProvenanceLedger(db_path)
+        ledger.verify_all_chains()
+        logger.info("CPT durable provenance ledger integrity verified successfully at %s", db_path)
+
+        # Run reconciliation/self-healing across all quarantined tenants (Design Refinement 5)
+        quarantined_tenants = ledger.get_quarantined_tenants()
+        if quarantined_tenants:
+            from clawglove.provenance.client import CPTClient
+            cpt_client = CPTClient.from_workspace(workspace)
+            for tenant in quarantined_tenants:
+                res = cpt_client.reconcile_quarantine(tenant)
+                logger.info("Reconciliation complete for tenant '%s': verified %d records, pruned %d untracked files",
+                            tenant, res["verified_count"], len(res["pruned_files"]))
+    except LedgerChainViolation as exc:
+        logger.critical("LEDGER_CHAIN_VIOLATION: %s. Fails closed.", exc)
+        sys.exit(1)
+    except Exception as exc:
+        logger.error("Failed to initialize or verify provenance ledger: %s", exc)
 
     daemon = ClawGloveDaemon(
         policies_dir=args.policies,
+        workspace=args.workspace,
+        http_host=args.http_host,
+        http_port=args.http_port,
         kafka_servers=args.kafka,
         otlp_endpoint=args.otlp,
         port=args.port,
