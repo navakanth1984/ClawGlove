@@ -20,6 +20,7 @@ Operator reset:
   tracker = ThreatEscalationTracker()
   tracker.reset_tenant("screenwriter")
 """
+import collections
 import logging
 import threading
 import time
@@ -42,7 +43,9 @@ class TenantThreatState:
     level: ThreatLevel = ThreatLevel.NORMAL
     first_violation_ts: float = 0.0
     last_violation_ts: float = 0.0
-    violation_actions: list = field(default_factory=list)   # history of denied actions
+    violation_actions: collections.deque = field(
+        default_factory=lambda: collections.deque(maxlen=50)
+    )  # ring-buffer of last 50 denied actions — prevents unbounded memory growth
 
 
 class ThreatEscalationTracker:
@@ -114,14 +117,19 @@ class ThreatEscalationTracker:
         Returns (quarantined: bool, reason: str).
         Called at the START of every policy check.
 
-        Also applies decay: if DECAY_WINDOW_SECONDS have passed since the
-        last violation, the violation count is reset to 0.
+        Decay policy:
+          - ELEVATED tenants decay after DECAY_WINDOW_SECONDS of clean activity.
+          - QUARANTINE tenants NEVER auto-decay. Operator reset is mandatory.
+            Allowing auto-decay from QUARANTINE would let an attacker simply
+            wait 5 minutes to escape containment, negating the security guarantee.
         """
         with self._lock:
             state = self._get_or_create(tenant_id)
 
-            # Apply decay if tenant has been clean for DECAY_WINDOW_SECONDS
-            if (state.violation_count > 0
+            # Apply decay ONLY for non-quarantine states.
+            # QUARANTINE requires explicit operator intervention — never auto-reset.
+            if (state.level != ThreatLevel.QUARANTINE
+                    and state.violation_count > 0
                     and state.last_violation_ts > 0
                     and (time.time() - state.last_violation_ts) > self.DECAY_WINDOW_SECONDS):
                 logger.info(
@@ -137,7 +145,7 @@ class ThreatEscalationTracker:
                     f"Tenant '{tenant_id}' is in QUARANTINE after "
                     f"{state.violation_count} policy violations. "
                     f"Operator reset required. "
-                    f"Attack sequence: {state.violation_actions[-5:]}"
+                    f"Attack sequence: {list(state.violation_actions)[-5:]}"
                 )
 
             return False, ""
