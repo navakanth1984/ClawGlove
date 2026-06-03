@@ -868,6 +868,71 @@ class Layer6SkillProvenance:
             shutil.rmtree(test_ws, ignore_errors=True)
 
     # ------------------------------------------------------------------
+    # T6-15: Deprecation Warning for Singular Secret File
+    # ------------------------------------------------------------------
+
+    def test_deprecation_warning_singular_secret(self) -> None:
+        """
+        Phase 6 Warmup: When a workspace contains the legacy singular
+        '.clawglove_secret' file, CPTClient.from_workspace() must emit
+        a DeprecationWarning naming '.clawglove_secrets' as the migration
+        target. When the file is absent, no warning must be emitted.
+        """
+        import warnings
+        import tempfile
+        import shutil
+
+        test_ws = Path(tempfile.mkdtemp(prefix="cgbench_deprecation_ws_"))
+        try:
+            # --- Sub-case 1: Warning IS emitted when singular file exists ---
+            singular = test_ws / ".clawglove_secret"
+            singular.write_text("00" * 32, encoding="utf-8")
+
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                CPTClient.from_workspace(test_ws)
+
+            depr_warnings = [
+                w for w in caught if issubclass(w.category, DeprecationWarning)
+            ]
+            assert len(depr_warnings) >= 1, (
+                f"Expected at least 1 DeprecationWarning, got {len(depr_warnings)}"
+            )
+            msg = str(depr_warnings[0].message)
+            assert ".clawglove_secrets" in msg, (
+                f"Warning must name the migration target '.clawglove_secrets'. "
+                f"Got: {msg}"
+            )
+
+            # --- Sub-case 2: No warning when singular file is absent ---
+            clean_ws = Path(tempfile.mkdtemp(prefix="cgbench_deprecation_clean_"))
+            try:
+                with warnings.catch_warnings(record=True) as caught_clean:
+                    warnings.simplefilter("always")
+                    CPTClient.from_workspace(clean_ws)
+
+                depr_clean = [
+                    w for w in caught_clean
+                    if issubclass(w.category, DeprecationWarning)
+                    and ".clawglove_secret" in str(w.message)
+                ]
+                assert len(depr_clean) == 0, (
+                    f"No DeprecationWarning expected in clean workspace, "
+                    f"got {len(depr_clean)}"
+                )
+            finally:
+                shutil.rmtree(clean_ws, ignore_errors=True)
+
+            self._record("T6-15", True)
+
+        except AssertionError as exc:
+            self._record("T6-15", False, str(exc))
+        except Exception as exc:
+            self._record("T6-15", False, f"Unexpected error: {exc}")
+        finally:
+            shutil.rmtree(test_ws, ignore_errors=True)
+
+    # ------------------------------------------------------------------
     # Runner
     # ------------------------------------------------------------------
 
@@ -891,6 +956,7 @@ class Layer6SkillProvenance:
             self.test_chaos_reconciliation,
             self.test_factory_method_quarantine,
             self.test_key_rotation_and_versioning,
+            self.test_deprecation_warning_singular_secret,
         ]
 
         start = time.monotonic()
@@ -1036,6 +1102,13 @@ def test_t6_14_key_rotation_and_versioning():
     layer = _make_layer()
     layer.test_key_rotation_and_versioning()
     r = next(r for r in layer.results if r["test"] == "T6-14")
+    assert r["passed"] is True
+
+
+def test_t6_15_deprecation_warning():
+    layer = _make_layer()
+    layer.test_deprecation_warning_singular_secret()
+    r = next(r for r in layer.results if r["test"] == "T6-15")
     assert r["passed"] is True
 
 
