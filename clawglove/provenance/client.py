@@ -27,6 +27,7 @@ import hmac
 import json
 import os
 import tempfile
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -177,7 +178,18 @@ class CPTClient:
         """
         workspace_path = Path(workspace_root)
         workspace_path.mkdir(parents=True, exist_ok=True)
-        
+
+        # Phase 6 deprecation: warn if the legacy singular secret file exists.
+        singular_secret = workspace_path / ".clawglove_secret"
+        if singular_secret.exists():
+            warnings.warn(
+                "The singular '.clawglove_secret' file is deprecated and will be "
+                "removed in a future release. Migrate to the multi-key "
+                "'.clawglove_secrets' keyring. See SECURITY.md for details.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # Load/bootstrap keyring
         keyring = _load_or_bootstrap_keyring(workspace_path)
         active_key_id = keyring["active_key_id"]
