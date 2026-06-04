@@ -5,7 +5,15 @@ Uses etcd leases for leader election and KV store for state checkpoints.
 """
 import json
 import logging
-import etcd3
+
+try:
+    import etcd3
+    _HAS_ETCD3 = True
+except (ImportError, TypeError):
+    # TypeError: protobuf >= 4.x raises TypeError on etcd3 0.12.0's generated _pb2 stubs
+    etcd3 = None  # type: ignore[assignment]
+    _HAS_ETCD3 = False
+
 from clawglove.interfaces import CoordinatorInterface
 
 logger = logging.getLogger(__name__)
@@ -26,20 +34,23 @@ class EtcdCoordinator(CoordinatorInterface):
         self._host = host
         self._port = port
 
-        try:
-            with socket.create_connection((host, port), timeout=0.1):
-                self._online = True
-        except Exception:
-            pass
-
-        if self._online:
+        if _HAS_ETCD3:
             try:
-                self._client = etcd3.client(host=host, port=port)
-                self._active_leases = {}
-                logger.info("EtcdCoordinator initialized and online: %s:%d", host, port)
-            except Exception as e:
-                logger.warning("etcd initialization failed: %s. Falling back to offline mode.", e)
-                self._online = False
+                with socket.create_connection((host, port), timeout=0.1):
+                    self._online = True
+            except Exception:
+                pass
+
+            if self._online:
+                try:
+                    self._client = etcd3.client(host=host, port=port)
+                    self._active_leases = {}
+                    logger.info("EtcdCoordinator initialized and online: %s:%d", host, port)
+                except Exception as e:
+                    logger.warning("etcd initialization failed: %s. Falling back to offline mode.", e)
+                    self._online = False
+        else:
+            logger.info("etcd3 library unavailable (protobuf incompatibility or not installed). Using local-only mode.")
 
         if not self._online:
             self._local_kv = {}
